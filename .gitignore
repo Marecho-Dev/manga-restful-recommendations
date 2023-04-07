@@ -1,0 +1,11 @@
+node_modules
+# Keep environment variables out of version control
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.env
+venv/
+env/
+*.log
+*.sqlite3

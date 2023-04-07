@@ -1,0 +1,51 @@
+
+
+datasource db {
+  provider     = "mysql"
+  url          = env("DATABASE_URL")
+  relationMode = "prisma"
+}
+
+generator client {
+  provider = "prisma-client-py"
+  interface = "sync"
+}
+
+model User {
+  id        Int   @id @default(autoincrement())
+  username  String   @db.VarChar(255)
+  createdAt DateTime @default(now())
+  mangaList MangaList[]
+
+}
+
+model MangaList {
+  user_id  Int //FOREIGN KEY user_id references User(id)
+  manga_id Int //FOREIGN KEY manga_id references Manga(mal_id)
+  rating   Float
+  user     User    @relation(fields: [user_id], references: [id])
+  manga    Manga   @relation(fields: [manga_id], references: [mal_id])
+
+  @@index([user_id])//foreign keys don't exist, must add this for relational database
+  @@index([manga_id])//foreign keys don't exist, must add this for relational database
+  @@id([user_id,manga_id])//each model needs a single unique id so we created this
+
+}
+
+model Manga {
+  mal_id  Int       @id //primary key
+  imageUrl String?  @db.VarChar(255) //allowed to be null
+  rating   Float
+  title    String   @db.VarChar(255)
+  genres   Genre[]
+  mangaList MangaList[]
+
+}
+
+model Genre {
+  mal_id     Int    @id //FOREIGN KEY mal_id references Manga(mal_id) //PRIMARY KEY
+  genre_name String @db.VarChar(255)
+  manga      Manga  @relation(fields: [mal_id], references: [mal_id])
+
+  @@index([mal_id])
+}
