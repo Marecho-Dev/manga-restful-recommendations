@@ -21,7 +21,7 @@ app = Quart(__name__)
 
 
 # 100,000 query limit so doing this in batches. Terms to lookup, sharding
-@app.route('/test/<int:user_id>')
+@app.route('/manga_recs/<int:user_id>')
 async def user_recommendation(user_id, m_value=None):
     # Use the Prisma client to query your database and return the results as JSON
     m_value = 10
