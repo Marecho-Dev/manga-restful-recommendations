@@ -73,6 +73,7 @@ async def user_recommendation(user_id, m_value=None):
     merged_df = merged_df.sort_values(by='rating', ascending=False).drop_duplicates(subset=['user_id', 'manga_id'],
                                                                                     keep='first').reset_index(drop=True)
     main_df = merged_df
+    logging.info(f'calling main_df: {main_df}')
     logging.info(f'pkl file opened and merged with previous df. ')
     # Create a mapping of user_id and manga_id to indices
     user_id_map = {user_id: i for i, user_id in enumerate(main_df['user_id'].unique())}
