@@ -44,6 +44,7 @@ async def user_recommendation(user_id, m_value=None):
     logging.info(f'calling total results: {total_results}')
     user_df = pd.DataFrame(total_results)
     user_df.columns = ['user_id', 'manga_id', 'rating']
+    logging.info(f'user_df.columns complete')
     # print(df.head())
     # pivot = df.pivot_table(index=['user_id'], columns=['manga_id'], values='rating')
     # pivot.fillna(0, inplace=True)
@@ -70,6 +71,7 @@ async def user_recommendation(user_id, m_value=None):
     merged_df = merged_df.sort_values(by='rating', ascending=False).drop_duplicates(subset=['user_id', 'manga_id'],
                                                                                     keep='first').reset_index(drop=True)
     main_df = merged_df
+    logging.info(f'pkl file opened and merged with previous df. ')
     # Create a mapping of user_id and manga_id to indices
     user_id_map = {user_id: i for i, user_id in enumerate(main_df['user_id'].unique())}
     manga_id_map = {manga_id: i for i, manga_id in enumerate(main_df['manga_id'].unique())}
@@ -79,9 +81,10 @@ async def user_recommendation(user_id, m_value=None):
     cols = main_df['manga_id'].map(manga_id_map.get).values
     data = main_df['rating'].values
     user_ids = list(user_id_map.keys())
+    logging.info(f'user_id list: {user_ids}')
     # Create the CSR matrix
     main_piv_sparse = csr_matrix((data, (rows, cols)), shape=(len(user_id_map), len(manga_id_map)))
-
+    logging.info(f'main_piv_sparse completed')
     manga_similarity = cosine_similarity(main_piv_sparse)
     logging.info(manga_similarity)
     # this gets pkled in my old file as manga pkl - this is the cosine similarity of similar users.
