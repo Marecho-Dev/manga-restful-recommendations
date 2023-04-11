@@ -33,13 +33,15 @@ app = Quart(__name__)
 # 100,000 query limit so doing this in batches. Terms to lookup, sharding
 @app.route('/manga_recs/<int:user_id>')
 async def user_recommendation(user_id, m_value=None):
+    logging.info('starting user_recommndation')
     # Use the Prisma client to query your database and return the results as JSON
     m_value = 10
     user_results = db.mangalist.find_many(where={"user_id": user_id})
-    print(user_results)
+    logging.info(user_results)
     total_results = []
     for result in user_results:
         total_results.append((result.user_id, result.manga_id, result.rating))
+    logging.info(total_results)
     user_df = pd.DataFrame(total_results)
     user_df.columns = ['user_id', 'manga_id', 'rating']
     # print(df.head())
