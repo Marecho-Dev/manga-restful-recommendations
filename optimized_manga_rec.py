@@ -1,5 +1,11 @@
 import pickle
+import psutil
+import logging
+# Set up logging configuration
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s')
 
+# Replace your print statements with logging.info
+logging.info("Your message here")
 import numpy as np
 from pandas.core.reshape import pivot
 from quart import Quart, jsonify
@@ -9,6 +15,9 @@ import scipy as sp
 from sklearn.metrics.pairwise import cosine_similarity
 from scipy.sparse import csr_matrix, hstack, csc_matrix
 import os
+process = psutil.Process()
+mem_info = process.memory_info()
+print(f"Current memory usage: {mem_info.rss / 1024 / 1024} MB")
 
 db = Prisma(
     http={
@@ -62,7 +71,7 @@ async def user_recommendation(user_id, m_value=None):
     # Create a mapping of user_id and manga_id to indices
     user_id_map = {user_id: i for i, user_id in enumerate(main_df['user_id'].unique())}
     manga_id_map = {manga_id: i for i, manga_id in enumerate(main_df['manga_id'].unique())}
-
+    print(f"Current memory usage: {mem_info.rss / 1024 / 1024} MB")
     # Compute the rows, columns, and data for the CSR matrix
     rows = main_df['user_id'].map(user_id_map.get).values
     cols = main_df['manga_id'].map(manga_id_map.get).values
@@ -98,7 +107,7 @@ async def user_recommendation(user_id, m_value=None):
                     where user_id = '{user_id}'
                     ) 
                     and ( """
-
+    print(f"Current memory usage: {mem_info.rss / 1024 / 1024} MB")
     for user in manga_sim_df.sort_values(by=user_id, ascending=False).index[1:101]:
         print(f'#{number}: {user}, {round(manga_sim_df[user][user_id] * 100, 2)}% match\n')
         similar_users += f'#{number}: {user}, {round(manga_sim_df[user][user_id] * 100, 2)}% match\n'
@@ -117,8 +126,10 @@ async def user_recommendation(user_id, m_value=None):
 
         number += 1
     print(manga_query)
+    print(f"Current memory usage: {mem_info.rss / 1024 / 1024} MB")
     manga_recs = db.query_raw(manga_query)
     print(manga_recs)
+    print(f"Current memory usage: {mem_info.rss / 1024 / 1024} MB")
     return manga_recs
 
 
