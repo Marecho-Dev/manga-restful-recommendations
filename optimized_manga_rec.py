@@ -71,7 +71,7 @@ async def user_recommendation(user_id, m_value=None):
     # Create a mapping of user_id and manga_id to indices
     user_id_map = {user_id: i for i, user_id in enumerate(main_df['user_id'].unique())}
     manga_id_map = {manga_id: i for i, manga_id in enumerate(main_df['manga_id'].unique())}
-    logging.info(f"Current memory usage: {mem_info.rss / 1024 / 1024} MB")
+    logging.info(f"Current memory usage in user_rec: {mem_info.rss / 1024 / 1024} MB")
     # Compute the rows, columns, and data for the CSR matrix
     rows = main_df['user_id'].map(user_id_map.get).values
     cols = main_df['manga_id'].map(manga_id_map.get).values
