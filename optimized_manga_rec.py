@@ -1,11 +1,8 @@
 import pickle
 import psutil
 import logging
+from sklearn.metrics import pairwise_distances
 # Set up logging configuration
-logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s')
-
-# Replace your print statements with logging.info
-logging.info("Your message here")
 import numpy as np
 from pandas.core.reshape import pivot
 from quart import Quart, jsonify
@@ -15,8 +12,13 @@ import scipy as sp
 from sklearn.metrics.pairwise import cosine_similarity
 from scipy.sparse import csr_matrix, hstack, csc_matrix
 import os
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s')
+
+# Replace your print statements with logging.info
+logging.info("Your message here")
 process = psutil.Process()
 mem_info = process.memory_info()
+
 logging.info(f"Current memory usage: {mem_info.rss / 1024 / 1024} MB")
 
 db = Prisma(
@@ -86,7 +88,9 @@ async def user_recommendation(user_id, m_value=None):
     main_piv_sparse = csr_matrix((data, (rows, cols)), shape=(len(user_id_map), len(manga_id_map)))
     logging.info(f'main_piv_sparse completed')
     logging.info(f"Current memory usage in user_rec: {mem_info.rss / 1024 / 1024} MB")
-    manga_similarity = cosine_similarity(main_piv_sparse)
+    # manga_similarity = cosine_similarity(main_piv_sparse)
+    cosine_distance = pairwise_distances(main_piv_sparse, metric='cosine')
+    manga_similarity = 1 - cosine_distance
     logging.info(f'calling manga_similiary: {manga_similarity}')
     # this gets pkled in my old file as manga pkl - this is the cosine similarity of similar users.
     manga_sim_df = pd.DataFrame(manga_similarity, index=user_ids, columns=user_ids)
