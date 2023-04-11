@@ -8,7 +8,6 @@ import pandas as pd
 import scipy as sp
 from sklearn.metrics.pairwise import cosine_similarity
 from scipy.sparse import csr_matrix, hstack, csc_matrix
-import os
 
 db = Prisma(
     http={
@@ -123,4 +122,4 @@ async def user_recommendation(user_id, m_value=None):
 
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT",5000)), threaded=True)
+    app.run(debug=True, port=5000, threaded=True)
