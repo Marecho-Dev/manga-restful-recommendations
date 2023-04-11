@@ -86,14 +86,15 @@ async def user_recommendation(user_id, m_value=None):
     main_piv_sparse = csr_matrix((data, (rows, cols)), shape=(len(user_id_map), len(manga_id_map)))
     logging.info(f'main_piv_sparse completed')
     manga_similarity = cosine_similarity(main_piv_sparse)
-    logging.info(manga_similarity)
+    logging.info(f'calling manga_similiary: {manga_similarity}')
     # this gets pkled in my old file as manga pkl - this is the cosine similarity of similar users.
     manga_sim_df = pd.DataFrame(manga_similarity, index=user_ids, columns=user_ids)
-    logging.info(manga_sim_df)
+    logging.info(f'calling manga_sim_df {manga_sim_df}')
     number = 1
     similar_users = ""
     user_list = []
     manga_list = []
+    logging.info(f'preparing to build manga_query')
     manga_query = f"""select manga_id,                    
         count(manga_id) as 'manga_count',
         avg(rating) as 'average_rating', 
