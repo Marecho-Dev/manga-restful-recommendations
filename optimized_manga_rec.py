@@ -67,7 +67,7 @@ async def user_recommendation(user_id, m_value=None):
     # df.columns = ['user_id', 'manga_id', 'rating']
     # with open("mangalist_df.pkl", "wb") as f:
     #     pickle.dump(df, f)
-    with open("mangalist_df.pkl", "rb") as f:
+    with open("pkl_files/mangalist_df_80085.pkl", "rb") as f:
         main_df = pickle.load(f)
     merged_df = pd.concat([main_df, user_df], ignore_index=True)
     merged_df = merged_df.sort_values(by='rating', ascending=False).drop_duplicates(subset=['user_id', 'manga_id'],
