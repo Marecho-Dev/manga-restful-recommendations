@@ -117,7 +117,7 @@ async def user_recommendation(user_id, m_value=None):
     manga_recs = db.query_raw(manga_query)
     logging.info(manga_recs)
     logging.info(f"Current memory usage: {mem_info.rss / 1024 / 1024} MB")
-    return manga_recs
+    return jsonify(manga_recs)
 
 
 if __name__ == "__main__":
