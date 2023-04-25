@@ -103,7 +103,7 @@ async def user_recommendation(user_id, m_value=None):
     )
     AND ml.user_id IN ({user_ids_str})
     AND ml.rating <> 0
-    GROUP BY ml.manga_id
+    GROUP BY ml.manga_id, m.mal_id, m.title, m.imageUrl
     ORDER BY weighted_rating DESC;"""
 
     logging.info(manga_query)
