@@ -73,19 +73,20 @@ async def user_recommendation(user_id):
     similar_users = ""
     user_list = []
     manga_list = []
-    manga_query = f"""select manga_id,                    
-        count(manga_id) as 'manga_count',
-        avg(rating) as 'average_rating', 
-        (count(manga_id) / 
-        (count(manga_id) + {m_value}))
-         * avg(rating) + 
-         ({m_value} / (count(manga_id) + {m_value})) 
+    manga_query = f"""select m.mal_id, m.title, m.imageUrl, m.rating,              
+        count(ml.manga_id) as 'manga_count',
+        avg(ml.rating) as 'average_rating', 
+        (count(ml.manga_id) / 
+        (count(ml.manga_id) + {m_value}))
+         * avg(ml.rating) + 
+         ({m_value} / (count(ml.manga_id) + {m_value})) 
          * (SELECT AVG(rating) FROM MangaList WHERE rating <> 0) AS 'weighted_rating'
         from (
             select * 
-            from MangaList 
+            from MangaList ml
+            join Manga m on ml.manga_id = m.mal_id
             where 
-                manga_id not in (
+                m.mal_id not in (
                     select manga_id 
                     from MangaList 
                     where user_id = '{user_id}'
