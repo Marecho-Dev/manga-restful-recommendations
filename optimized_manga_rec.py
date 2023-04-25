@@ -86,7 +86,7 @@ async def user_recommendation(user_id, m_value=None):
     sorted_similar_user_list = sorted(user_list, key=lambda x: float(x[1]), reverse=True)
     user_ids_str = ', '.join([str(similar_user_id[0]) for similar_user_id in sorted_similar_user_list])
     logging.info(f'preparing to build manga_query')
-    manga_query = f"""select m.mal_id, m.title,m.imageUrl, m.rating                    
+    manga_query = f"""select m.mal_id, m.title,m.imageUrl, m.rating,                   
         count(ml.manga_id) as 'manga_count',
         avg(ml.rating) as 'average_rating', 
         (count(ml.manga_id) / 
