@@ -86,31 +86,25 @@ async def user_recommendation(user_id, m_value=None):
     sorted_similar_user_list = sorted(user_list, key=lambda x: float(x[1]), reverse=True)
     user_ids_str = ', '.join([str(similar_user_id[0]) for similar_user_id in sorted_similar_user_list])
     logging.info(f'preparing to build manga_query')
-    manga_query = f"""select manga_id,                    
-        count(manga_id) as 'manga_count',
-        avg(rating) as 'average_rating', 
-        (count(manga_id) / 
-        (count(manga_id) + {m_value}))
-         * avg(rating) + 
-         ({m_value} / (count(manga_id) + {m_value})) 
+    manga_query = f"""select m.mal_id, m.title,m.imageUrl, m.rating                    
+        count(ml.manga_id) as 'manga_count',
+        avg(ml.rating) as 'average_rating', 
+        (count(ml.manga_id) / 
+        (count(ml.manga_id) + {m_value}))
+         * avg(ml.rating) + 
+         ({m_value} / (count(ml.manga_id) + {m_value})) 
          * (SELECT AVG(rating) FROM MangaList WHERE rating <> 0) AS 'weighted_rating'
-        from (
-            select * 
-            from MangaList 
-            where 
-                manga_id not in (
-                    select manga_id 
-                    from MangaList 
-                    where user_id = '{user_id}'
-                    ) 
-                    and ( 
-                    user_id IN ({user_ids_str})
-                    ) 
-                and rating <> 0 
-                ) as subquery 
-                group by 
-                manga_id order by 
-                weighted_rating DESC;"""
+        FROM MangaList ml
+    JOIN Manga m ON ml.manga_id = m.mal_id
+    WHERE ml.manga_id NOT IN (
+        SELECT manga_id
+        FROM MangaList
+        WHERE user_id = '{user_id}'
+    )
+    AND ml.user_id IN ({user_ids_str})
+    AND ml.rating <> 0
+    GROUP BY ml.manga_id
+    ORDER BY weighted_rating DESC;"""
 
     logging.info(manga_query)
     logging.info(f"Current memory usage: {mem_info.rss / 1024 / 1024} MB")
