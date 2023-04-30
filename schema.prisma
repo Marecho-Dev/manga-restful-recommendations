@@ -1,4 +1,7 @@
-
+generator client {
+  provider  = "prisma-client-py"
+  interface = "sync"
+}
 
 datasource db {
   provider     = "mysql"
@@ -6,14 +9,9 @@ datasource db {
   relationMode = "prisma"
 }
 
-generator client {
-  provider = "prisma-client-py"
-  interface = "sync"
-}
-
 model User {
   id        Int   @id @default(autoincrement())
-  username  String   @db.VarChar(255)
+  username  String   @unique @db.VarChar(255)
   createdAt DateTime @default(now())
   mangaList MangaList[]
 
@@ -37,15 +35,30 @@ model Manga {
   imageUrl String?  @db.VarChar(255) //allowed to be null
   rating   Float
   title    String   @db.VarChar(255)
-  genres   Genre[]
+  rank Int  @default(0)
+  media_type String @db.VarChar(255)  @default("")
+  author String @db.VarChar(255)  @default("")
+  status String @db.VarChar(255)  @default("")
+  summary String? @db.LongText @default("")
+  genres   Genres[]
   mangaList MangaList[]
 
 }
 
-model Genre {
-  mal_id     Int    @id //FOREIGN KEY mal_id references Manga(mal_id) //PRIMARY KEY
+model Genres {
+  mal_id     Int    //FOREIGN KEY mal_id references Manga(mal_id)
+  genre_id Int      //FOREIGN KEY genre_id references Genre(id)
   genre_name String @db.VarChar(255)
   manga      Manga  @relation(fields: [mal_id], references: [mal_id])
+  genre      Genre  @relation(fields: [genre_id], references: [id])
 
   @@index([mal_id])
+  @@index([genre_id])
+  @@id([mal_id,genre_id])
+}
+
+model Genre {
+id Int @id
+genre_name String @db.VarChar(255)
+genres Genres[]
 }
