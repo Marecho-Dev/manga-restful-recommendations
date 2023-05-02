@@ -95,8 +95,11 @@ async def user_recommendation(user_id, m_value=None):
          * avg(ml.rating) + 
          ({m_value} / (count(ml.manga_id) + {m_value})) 
          * (SELECT AVG(rating) FROM MangaList WHERE rating <> 0) AS 'weighted_rating'
+         GROUP_CONCAT(g.genre_name) AS 'genres'
         FROM MangaList ml
     JOIN Manga m ON ml.manga_id = m.mal_id
+    JOIN Genres mg ON mg.mal_id = m.mal_id
+    JOIN Genre g ON g.id = mg.genre_id
     WHERE ml.manga_id NOT IN (
         SELECT manga_id
         FROM MangaList
