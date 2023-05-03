@@ -80,7 +80,7 @@ async def user_recommendation(user_id, m_value=None):
         # this gets pkled in my old file as manga pkl - this is the cosine similarity of similar users.
         manga_sim_df = pd.DataFrame(manga_similarity, index=user_ids, columns=user_ids)
         logging.info(f'calling manga_sim_df {manga_sim_df}')
-        for user in manga_sim_df.sort_values(by=user_id, ascending=False).index[1:5]:
+        for user in manga_sim_df.sort_values(by=user_id, ascending=False).index[1:3]:
             logging.info(f'{user}, {round(manga_sim_df[user][user_id] * 100, 2)}% match\n')
             user_list.append((user, round(manga_sim_df[user][user_id] * 100, 2)))
     sorted_similar_user_list = sorted(user_list, key=lambda x: float(x[1]), reverse=True)
