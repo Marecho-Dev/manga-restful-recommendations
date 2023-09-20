@@ -3,14 +3,12 @@ import psutil
 import logging
 from sklearn.metrics import pairwise_distances
 # Set up logging configuration
-import numpy as np
-from pandas.core.reshape import pivot
+
 from quart import Quart, jsonify
 from prisma import Prisma, register
 import pandas as pd
-import scipy as sp
-from sklearn.metrics.pairwise import cosine_similarity
-from scipy.sparse import csr_matrix, hstack, csc_matrix
+
+from scipy.sparse import csr_matrix
 import os
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s')
@@ -32,6 +30,27 @@ register(db)
 
 app = Quart(__name__)
 
+def get_user_likes(user_id):
+    """
+    Retrieve all the manga liked by the user from the database.
+
+    Args:
+    - user_id (int): The ID of the user.
+
+    Returns:
+    - list of tuples: Each tuple contains user_id, manga_id, and rating.
+    """
+    user_results = db.mangalist.find_many(where={"user_id": user_id})
+    logging.info(f'Calling users_results: {user_results}')
+
+    total_results = [(result.user_id, result.manga_id, result.rating) for result in user_results]
+
+    return total_results
+
+def create_dataframe(data, columns=['user_id', 'manga_id', 'rating']):
+    df = pd.DataFrame(data, columns=columns)
+    logging.info(f'{df.columns} complete')
+    return df
 
 # 100,000 query limit so doing this in batches. Terms to lookup, sharding
 @app.route('/manga_recs/<int:user_id>')
@@ -39,30 +58,27 @@ async def user_recommendation(user_id, m_value=None):
     logging.info('starting user_recommndation')
     # Use the Prisma client to query your database and return the results as JSON
     m_value = 10
-    user_results = db.mangalist.find_many(where={"user_id": user_id})
-    logging.info(f'calling users_results: {user_results}')
-    total_results = []
-    for result in user_results:
-        total_results.append((result.user_id, result.manga_id, result.rating))
-    logging.info(f'calling total results: {total_results}')
-    user_df = pd.DataFrame(total_results)
-    user_df.columns = ['user_id', 'manga_id', 'rating']
-    logging.info(f'user_df.columns complete')
+    #searches for user in database and returns all likes
+    user_results = get_user_likes(user_id);
+    #Creates dataframe for the username's provided manga list
+    user_df = create_dataframe(user_results)
+    #initalized empty array
     user_list = []
     for file in os.listdir(pkl_directory):
+        # loads the current pkl file to main df
         with open(f'pkl_files/{file}', "rb") as f:
             main_df = pickle.load(f)
+        #merged_df concats main_df and the user_df.
         merged_df = pd.concat([main_df, user_df], ignore_index=True)
+        #sorts the merged_df by rating
         merged_df = merged_df.sort_values(by='rating', ascending=False).drop_duplicates(subset=['user_id', 'manga_id'],
                                                                                         keep='first').reset_index(
             drop=True)
+        #sets main_df to merged_df
         main_df = merged_df
-        logging.info(f'calling main_df: {main_df}')
-        logging.info(f'pkl file opened and merged with previous df. ')
         # Create a mapping of user_id and manga_id to indices
         user_id_map = {user_id: i for i, user_id in enumerate(main_df['user_id'].unique())}
         manga_id_map = {manga_id: i for i, manga_id in enumerate(main_df['manga_id'].unique())}
-        logging.info(f"Current memory usage in user_rec: {mem_info.rss / 1024 / 1024} MB")
         # Compute the rows, columns, and data for the CSR matrix
         rows = main_df['user_id'].map(user_id_map.get).values
         cols = main_df['manga_id'].map(manga_id_map.get).values
