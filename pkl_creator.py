@@ -33,7 +33,7 @@ app = Quart(__name__)
 async def user_recommendation(user_id):
     # Use the Prisma client to query your database and return the results as JSON
     total_rows = db.mangalist.count()
-    batch_size = 40000
+    batch_size = 80000
     offset = 0
     # this while loop goes through all the rows in the db in batches of the set batch_size
     while offset < total_rows:
