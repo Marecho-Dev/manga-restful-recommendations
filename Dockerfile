@@ -26,7 +26,7 @@ RUN node -v && npm -v
 RUN npm install -g prisma
 
 #Generate the prisma client
-RUN npx prisma generate
+RUN npx prisma@4.11.0 generate
 
 # Make port 80 available to the world outside this container
 EXPOSE 80
