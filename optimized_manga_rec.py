@@ -16,10 +16,16 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s: %(mes
 
 # Replace your print statements with logging.info
 logging.info("Your message here")
-process = psutil.Process()
-mem_info = process.memory_info()
+
+
+def log_memory_usage():
+    process = psutil.Process()
+    mem_info = process.memory_info()
+    logging.info(f"Current memory usage: {mem_info.rss / 1024 / 1024} MB")
+
+
 pkl_directory = "pkl_files/"
-logging.info(f"Current memory usage: {mem_info.rss / 1024 / 1024} MB")
+log_memory_usage()
 
 db = Prisma(
     http={
@@ -30,6 +36,7 @@ db.connect()
 register(db)
 
 app = Quart(__name__)
+
 
 def get_user_likes(user_id):
     """
@@ -47,6 +54,7 @@ def get_user_likes(user_id):
     total_results = [(result.user_id, result.manga_id, result.rating) for result in user_results]
 
     return total_results
+
 
 def create_dataframe(data, columns=['user_id', 'manga_id', 'rating']):
     df = pd.DataFrame(data, columns=columns)
@@ -67,9 +75,10 @@ def get_nearest_neighbors(user_id, binary_matrix, nn_model, k=5):
     Returns:
         list: List of user_ids of the k nearest neighbors.
     """
-
+    logging.info("user_vector")
     # Retrieve the binary representation for the user
     user_vector = binary_matrix.loc[user_id].values.reshape(1, -1)
+    log_memory_usage()
 
     # Find k nearest neighbors
     distances, indices = nn_model.kneighbors(user_vector, n_neighbors=k + 1)
@@ -89,24 +98,24 @@ async def user_recommendation(user_id, m_value=None):
     logging.info('starting user_recommndation')
     # Use the Prisma client to query your database and return the results as JSON
     m_value = 10
-    #searches for user in database and returns all likes
+    # searches for user in database and returns all likes
     user_results = get_user_likes(user_id);
-    #Creates dataframe for the username's provided manga list
+    # Creates dataframe for the username's provided manga list
     user_df = create_dataframe(user_results)
-    #initalized empty array
+    # initalized empty array
     user_list = []
     for file in os.listdir(pkl_directory):
         # loads the current pkl file to main df
         with open(f'pkl_files/{file}', "rb") as f:
             main_df = pickle.load(f)
             print(main_df)
-        #merged_df concats main_df and the user_df.
+        # merged_df concats main_df and the user_df.
         merged_df = pd.concat([main_df, user_df], ignore_index=True)
-        #sorts the merged_df by rating
+        # sorts the merged_df by rating
         merged_df = merged_df.sort_values(by='rating', ascending=False).drop_duplicates(subset=['user_id', 'manga_id'],
                                                                                         keep='first').reset_index(
             drop=True)
-        #sets main_df to merged_df
+        # sets main_df to merged_df
         logging.info('calling main_df = merged_df')
         main_df = merged_df
         # beginning the start of jaccards ---------------------------------------
@@ -114,7 +123,8 @@ async def user_recommendation(user_id, m_value=None):
         jac_main_df = main_df.copy()
         jac_main_df['rating'] = 1
         logging.info('creating binary_df')
-        binary_df = main_df.pivot(index='user_id', columns="manga_id",values='rating').fillna(0).astype(int)
+        log_memory_usage()
+        binary_df = jac_main_df.pivot(index='user_id', columns="manga_id", values='rating').fillna(0).astype(int)
         logging.info('nearest neighbors')
         model = NearestNeighbors(metric='jaccard', algorithm='brute')
         model.fit(binary_df)
@@ -138,7 +148,7 @@ async def user_recommendation(user_id, m_value=None):
         main_piv_sparse = csr_matrix((data, (rows, cols)), shape=(len(user_id_map), len(manga_id_map)))
         logging.info(f'main_piv_sparse completed')
         logging.info(main_piv_sparse)
-        logging.info(f"Current memory usage in user_rec: {mem_info.rss / 1024 / 1024} MB")
+        log_memory_usage()
         # manga_similarity = cosine_similarity(main_piv_sparse)
         cosine_distance = pairwise_distances(main_piv_sparse, metric='cosine')
         manga_similarity = 1 - cosine_distance
@@ -177,10 +187,10 @@ async def user_recommendation(user_id, m_value=None):
     ORDER BY weighted_rating DESC;"""
 
     logging.info(manga_query)
-    logging.info(f"Current memory usage: {mem_info.rss / 1024 / 1024} MB")
+    log_memory_usage()
     manga_recs = db.query_raw(manga_query)
     logging.info(manga_recs)
-    logging.info(f"Current memory usage: {mem_info.rss / 1024 / 1024} MB")
+    log_memory_usage()
     return jsonify(manga_recs)
 
 
