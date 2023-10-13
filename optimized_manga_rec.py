@@ -104,6 +104,7 @@ async def user_recommendation(user_id, m_value=None):
     user_df = create_dataframe(user_results)
     # initalized empty array
     user_list = []
+    model = NearestNeighbors(metric='jaccard', algorithm='brute')
     for file in os.listdir(pkl_directory):
         # loads the current pkl file to main df
         with open(f'pkl_files/{file}', "rb") as f:
@@ -126,7 +127,6 @@ async def user_recommendation(user_id, m_value=None):
         log_memory_usage()
         binary_df = jac_main_df.pivot(index='user_id', columns="manga_id", values='rating').fillna(0).astype(int)
         logging.info('nearest neighbors')
-        model = NearestNeighbors(metric='jaccard', algorithm='brute')
         model.fit(binary_df)
         nearest_neighbors_user = get_nearest_neighbors(user_id, binary_df, model, k=20)
         logging.info('printing out nearest_neighbors for the user')
