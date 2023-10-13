@@ -107,11 +107,15 @@ async def user_recommendation(user_id, m_value=None):
                                                                                         keep='first').reset_index(
             drop=True)
         #sets main_df to merged_df
+        logging.info('calling main_df = merged_df')
         main_df = merged_df
         # beginning the start of jaccards ---------------------------------------
+        logging.info('start of jaccards')
         jac_main_df = main_df.copy()
         jac_main_df['rating'] = 1
+        logging.info('creating binary_df')
         binary_df = main_df.pivot(index='user_id', columns="manga_id",values='rating').fillna(0).astype(int)
+        logging.info('nearest neighbors')
         model = NearestNeighbors(metric='jaccard', algorithm='brute')
         model.fit(binary_df)
         nearest_neighbors_user = get_nearest_neighbors(user_id, binary_df, model, k=20)
