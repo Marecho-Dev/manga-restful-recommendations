@@ -2,6 +2,7 @@ import pickle
 import psutil
 import logging
 from sklearn.metrics import pairwise_distances
+from sklearn.neighbors import NearestNeighbors
 # Set up logging configuration
 
 from quart import Quart, jsonify
@@ -52,6 +53,36 @@ def create_dataframe(data, columns=['user_id', 'manga_id', 'rating']):
     logging.info(f'{df.columns} complete')
     return df
 
+
+def get_nearest_neighbors(user_id, binary_matrix, nn_model, k=5):
+    """
+    Return the k nearest neighbors to a given user_id based on a provided binary matrix.
+
+    Parameters:
+        user_id (int): ID of the user to find neighbors for.
+        binary_matrix (pd.DataFrame): Binary user-item matrix.
+        nn_model (NearestNeighbors): Trained NearestNeighbors model.
+        k (int): Number of neighbors to return.
+
+    Returns:
+        list: List of user_ids of the k nearest neighbors.
+    """
+
+    # Retrieve the binary representation for the user
+    user_vector = binary_matrix.loc[user_id].values.reshape(1, -1)
+
+    # Find k nearest neighbors
+    distances, indices = nn_model.kneighbors(user_vector, n_neighbors=k + 1)
+
+    # Get user_ids of the nearest neighbors
+    nearest_users = binary_matrix.index[indices.flatten()].tolist()
+
+    # Exclude the user themselves (as they'll always be the closest match)
+    nearest_users = nearest_users[1:]
+
+    return nearest_users
+
+
 # 100,000 query limit so doing this in batches. Terms to lookup, sharding
 @app.route('/manga_recs/<int:user_id>')
 async def user_recommendation(user_id, m_value=None):
@@ -68,6 +99,7 @@ async def user_recommendation(user_id, m_value=None):
         # loads the current pkl file to main df
         with open(f'pkl_files/{file}', "rb") as f:
             main_df = pickle.load(f)
+            print(main_df)
         #merged_df concats main_df and the user_df.
         merged_df = pd.concat([main_df, user_df], ignore_index=True)
         #sorts the merged_df by rating
@@ -76,6 +108,19 @@ async def user_recommendation(user_id, m_value=None):
             drop=True)
         #sets main_df to merged_df
         main_df = merged_df
+        # beginning the start of jaccards ---------------------------------------
+        jac_main_df = main_df.copy()
+        jac_main_df['rating'] = 1
+        binary_df = main_df.pivot(index='user_id', columns="manga_id",values='rating').fillna(0).astype(int)
+        model = NearestNeighbors(metric='jaccard', algorithm='brute')
+        model.fit(binary_df)
+        nearest_neighbors_user = get_nearest_neighbors(user_id, binary_df, model, k=20)
+        logging.info('printing out nearest_neighbors for the user')
+        logging.info(nearest_neighbors_user)
+        filtered_users = [529] + nearest_neighbors_user
+        filtered_df = main_df[main_df['user_id'].isin(filtered_users)]
+        main_df = filtered_df
+        # end of jaccards dataframe modifying---------------------------------------
         # Create a mapping of user_id and manga_id to indices
         user_id_map = {user_id: i for i, user_id in enumerate(main_df['user_id'].unique())}
         manga_id_map = {manga_id: i for i, manga_id in enumerate(main_df['manga_id'].unique())}
@@ -88,6 +133,7 @@ async def user_recommendation(user_id, m_value=None):
         # Create the CSR matrix
         main_piv_sparse = csr_matrix((data, (rows, cols)), shape=(len(user_id_map), len(manga_id_map)))
         logging.info(f'main_piv_sparse completed')
+        logging.info(main_piv_sparse)
         logging.info(f"Current memory usage in user_rec: {mem_info.rss / 1024 / 1024} MB")
         # manga_similarity = cosine_similarity(main_piv_sparse)
         cosine_distance = pairwise_distances(main_piv_sparse, metric='cosine')
